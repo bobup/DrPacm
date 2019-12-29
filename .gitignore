@@ -1,0 +1,11 @@
+# .gitignore for the DrPacm project
+
+# ignore Mac-specific directory descriptor file
+.DS_Store
+# ignore a directory used to store results (used for testing on dev, history on production)
+ATTIC-DrPacm/
+# ignore some misc directories used during development
+PushedVersions/
+PushDrPacm.bash
+# ignore vi temp files
+*.swp
