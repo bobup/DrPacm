@@ -190,7 +190,7 @@
 				   foreach ($fieldsFound as $key=>$value) {
 						if( $key == 0 ) continue;
 						switch( $key ) {
-							case 0: continue;
+							case 0: continue 2;
 							case 1:
 								$results["distance"] = $value;
 								break;

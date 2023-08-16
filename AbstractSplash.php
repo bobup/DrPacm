@@ -67,7 +67,7 @@ abstract class AbstractSplash {
 	function PutIntoCanonicalForm() {
 		$errStr = "";
 		$this->gender = GenerateCanonicalGender( $this->gender );
-		if( count($this->gender) > 1 ) {
+		if( strlen($this->gender) > 1 ) {
 			echo "$this->gender\n";
 			$this->gender = "?";
 		}
@@ -77,7 +77,7 @@ abstract class AbstractSplash {
 			$this->durationHund = 9999999.99;
 		}
 		$fixedStroke = GenerateCanonicalStroke( $this->stroke );
-		if( count( $fixedStroke ) > 20 ) {
+		if( strlen( $fixedStroke ) > 20 ) {
 			echo "$fixedStroke\n";
 		} else {
 			$this->stroke = $fixedStroke;

@@ -9,7 +9,7 @@
  */
 
  
-define( MAX_COLLISIONS, 1000 );		// used during hash collisions.  If we have more than this many then
+define( 'MAX_COLLISIONS', 1000 );		// used during hash collisions.  If we have more than this many then
 									// we're going to assume something is very wrong!
  
  

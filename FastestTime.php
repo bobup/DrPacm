@@ -174,7 +174,17 @@ class FastestTime extends AbstractSplash {
 		}
 		$result .= " '$fullName' ($this->gender:$this->ageGroup, " .
 			"sid=$this->sid)\n";
-		$result .= "    $this->course $this->distance $this->stroke in $this->duration ($this->durationHund ms) " .
+		
+		/***** 16aug2023:
+		*** Oh, heaven help me!  the 'durationHund' is a time in hundredths of a second, just as it
+		*** looks and just as it is documented in the parent class. BUT, for some reason, when this
+		*** code was written many years ago I wanted to show this number and claim it was "ms", but
+		*** that's not correct! (As pointed out by Dan Wegner.) I really really really don't want
+		*** to show the time as "cs" (centiseconds) since most normal people don't know what that
+		*** is. So I'm tacking on an extra '0' so I can call it a "ms". Call it poetic license.
+		******/
+		$result .= "    $this->course $this->distance $this->stroke in $this->duration ($this->durationHund" .
+			"0 ms) " .
 			"on $this->date for team '$this->club',\n    ";
 		if( $this->splashId != "" ) {
 			$result .= "splash=http://www.usms.org/comp/meets/swim.php?s=$this->splashId";
