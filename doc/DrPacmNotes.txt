@@ -1,0 +1,17 @@
+DrPacm.  9oct2026
+
+
+To get SCY records hit this:
+    https://www.usms.org/comp/meets/lmsc_fastest_times.php?CourseID=$courseId&LMSCID=38
+This url hits the challenge page.
+
+
+
+to test; cd DrPacm directory.  SCY only. don't run in REAL mode, don't run on production.
+	php -d display_errors DrPacm.php -y 
+Same as above but all courses:
+	php -d display_errors DrPacm.php -a
+
+
+
+

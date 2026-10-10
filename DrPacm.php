@@ -207,6 +207,7 @@ $PmsRecords = array();
 $grandTotalNumRecords = 0;			// total number of records found over all courses processed
 $grandTotalNumFatal = 0;			// total number of records we failed to insert over all courses processed
 $grandTotalNumExceptions = 0;		// total number of exceptions generated over all courses processed
+$grandTotalFatalHTTPErrors = 0;		// total number of HTTP errors
 
 $emailsSentToGroup = 0;				// set to 1 if we send any emails to the group
 
@@ -228,7 +229,13 @@ foreach( $coursesToProcess as $course ) {
 
 	echo "\n/////////// Begin $course //////////////////////////////////////////////////////////////////////\n";
 	// Get the PAC fastest times according to USMS for a specific course, all genders, and age groups:
-	GetFastestTimes( $course, $myCourses[$course], $myGenders, $myAgeGroups, $FastestTimes[$course] );
+	$numSwimRecords = GetFastestTimes( $course, $myCourses[$course], $myGenders, $myAgeGroups, 
+		$FastestTimes[$course] );
+	if( $numSwimRecords == 0 ) {
+		echo "Unable to process $course records.\n";
+		continue;
+	}
+	
 //	$FastestTimes[$course]->SanityCheck( );
 	
 	// Get the current PMS records for a specific course
@@ -290,6 +297,7 @@ $email->AddToContent( $realFlagStr . "\n" );
 $email->AddToContent( $updateFlagStr . "\n" );
 $email->AddToContent( "Number of records: $grandTotalNumRecords ($grandTotalNumFatal fatal errors.)  " );
 $email->AddToContent( "Number of exceptions: $grandTotalNumExceptions.\n" );
+$email->AddToContent( "Number of HTTP errors: $grandTotalFatalHTTPErrors.\n" );
 $email->AddToContent( "Processed course(s): " . $coursesStr . "\n" );
 if( $emailsSentToGroup ) {
 	$email->AddToContent( "There were emails sent to the group\n\n" );
@@ -925,7 +933,7 @@ function CompareFastestTimeWithRecord( FastestTime $fastestTime, PMSRecord $pmsR
  * 	$recordCollection - a reference to the RecordCollection object that will hold the fastest times we get.
  *
  * RETURNED:
- *  n/a
+ *  $numRecords - the number of swim records found
  *
  * NOTES:
  *  This routine doesn't really do much - it just sets up a fetch of a web page and then waits until
@@ -935,7 +943,9 @@ function CompareFastestTimeWithRecord( FastestTime $fastestTime, PMSRecord $pmsR
  */
 function GetFastestTimes( $course, $courseId, $myGenders, $myAgeGroups, &$recordCollection ) {
 	global $logFetchedWebPages;
+	global $grandTotalFatalHTTPErrors;
 	$callBack = new CallBacks();		// this object contains the method we use as a callback
+	$numRecords = 0;
 	
 	// define the genders we'll look for:
 	foreach( $myGenders as $gender ) {
@@ -955,22 +965,45 @@ function GetFastestTimes( $course, $courseId, $myGenders, $myAgeGroups, &$record
 	}
 	// we will use Curl to read web pages
 	$curlHandle = curl_init();
+	$url = "https://www.usms.org/comp/meets/lmsc_fastest_times.php?CourseID=$courseId&LMSCID=38";
+	
+	// for testing....
+	//$url = "https://en.wikipedia.org/wiki/Dog";
 	
 	// set url
-	curl_setopt($curlHandle, CURLOPT_URL,
-		"https://www.usms.org/comp/meets/lmsc_fastest_times.php?CourseID=$courseId&LMSCID=38" );
+	curl_setopt($curlHandle, CURLOPT_URL, $url );
 	// return the transfer as a string
 	curl_setopt($curlHandle, CURLOPT_RETURNTRANSFER, 1);
 	// we'll process the returned web page a chunk at a time
 	curl_setopt($curlHandle, CURLOPT_WRITEFUNCTION, function( $ch, $chunk ) use ($callBack, &$recordCollection) {
 		return $callBack->curlRequestCallback( $ch, $chunk, $recordCollection ); } );
 	
+	// 10oct2026:
+	// <client name> == "PACDataBot"   <version> == "1.0"
+	// (contact information) == "agsoty@pacificmasters.org"
+	// <library/framework name> == "AGSOTY"    <version> == "1.0"
+	// <
+	curl_setopt( $curlHandle, CURLOPT_USERAGENT, "PACDataBot/1.0 " .
+		"(https://www.pacificmasters.org/page.cfm?pagetitle=Swimmer+of+the+Year+Rankings; " .
+		"agsoty@pacificmasters.org)" );
+	
+	
 	// set curl off an running...
-	curl_exec( $curlHandle );
+	$curlStatus = curl_exec( $curlHandle );
+	if( $curlStatus === false ) {
+		echo "Failed to fetch this: '$url'\n";
+		$numRecords = 0;
+		$grandTotalFatalHTTPErrors++;
+	} else {
+		$numRecords = $callBack->numRecords;
+	}
 	
 	// once we get here we're done with this course...
 	// close curl resource to free up system resources
 	curl_close($curlHandle);
+	
+	return $numRecords;
+	
 } // end of GetFastestTimes()
 
 

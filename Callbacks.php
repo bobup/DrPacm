@@ -76,44 +76,56 @@
 	 *
 	 */
 	function curlRequestCallback( $curlHandle, $chunk, RecordCollection &$recordCollection ) {
-	   $len = strlen( $chunk );
-	   $this->numCallbackCalls++;
-	   $state = $this->state;
-	   $partialLastLine = 0;		// set to 1 if the chunk we were passed ends with a partial line
-	   $leftoverLine = $this->leftoverLine;
-	   $course = $this->course;
-   
+		$len = strlen( $chunk );
+		$this->numCallbackCalls++;
+		$state = $this->state;
+		$partialLastLine = 0;		// set to 1 if the chunk we were passed ends with a partial line
+		$leftoverLine = $this->leftoverLine;
+		$course = $this->course;
+		$http_code = curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
+		
+		if( $http_code != 200 ) {
+			echo "Callbacks.php::curlRequestCallback(): invalid HTTP response ($http_code) " .
+				"callback # $this->numCallbackCalls - abort this request.\n";
+			return -1;
+		}
+		
+		
+		//!!!!!!!
+		#echo "curlRequestCallback(), #" . $this->numCallbackCalls . ": $http_code\n\n\n";
+		#echo "curlRequestCallback(), #" . $this->numCallbackCalls . ": $chunk\n\n\n";
+		
 		// log this chunk if requested:
 		if( $this->logFP ) {
 			fwrite( $this->logFP, $chunk );
 		}
 		
-	   if( substr( $chunk, -1 ) != "\n" ) {
+		if( substr( $chunk, -1 ) != "\n" ) {
 		   # the content ends with a partial line - remember this fact:
 		   $partialLastLine = 1;
-	   }
-	   
-	   // break our chunk into an array of lines (line is a string terminated by a \n)
-	   $lines = explode( "\n", $chunk );
-	   $numLines = count($lines);
-	   if( $leftoverLine != "" ) {
+		}
+		
+		// break our chunk into an array of lines (line is a string terminated by a \n)
+		$lines = explode( "\n", $chunk );
+		$numLines = count($lines);
+		if( $leftoverLine != "" ) {
 		   // we have part of a line left over from the previous chunk - prepend it to the first line of
 		   // the current chunk
 		   $lines[0] = $leftoverLine . $lines[0];
-	   }
-   
-	   if( $partialLastLine ) {
+		}
+		
+		if( $partialLastLine ) {
 		   // the last line of our chunk is a partial line - save it for the next chunk
 		   $numLines--;
 		   $this->leftoverLine = $lines[$numLines];
 		   unset( $lines[$numLines] );
-	   } else {
+		} else {
 			// our chunk was an integral number of lines - no extra text to add to the front of the next chunk
 			$this->leftoverLine = "";
-	   }
-	   
-	   // now we have an array of complete lines to process - (re-)start our state machine
-	   foreach( $lines as $line ) {
+		}
+		
+		// now we have an array of complete lines to process - (re-)start our state machine
+		foreach( $lines as $line ) {
 		   $this->numLines++;
 		   if( $state == "LookingForContent") {
 			   // we're still looking for the start of the interesting content
@@ -223,12 +235,12 @@
 				   $results["gender"] = $this->currentGender;
 				   $results["ageGroup"] = $this->currentAgeGroup;
 				   $results["course"] = $this->course;
-
-/*  don't use split names yet....
+		
+		/*  don't use split names yet....
 				   // now get the swimmer's name as first, middle, last (full name isn't useful...)
 				   list($results["first"],$results["mi"],$results["last"]) =
 						GetSwimmerNames( $results["sid"], $results["fullname"] );
-*/
+		*/
 				   $recordCollection->add( (new FastestTime( $results ))->PutIntoCanonicalForm() );
 			   } elseif( strpos( $line, '</table>' ) !== false ) {
 				   // found the end of records for the current gender and age group
@@ -240,13 +252,13 @@
 			   // invalid state!!!
 			   echo "curlRequestCallback(): ERROR: invalid state ('$state')\n";
 		   }
-	   } // end of foreach()
-   
-	   // when we call this callback again (if we do) this is the state our machine will be in:
-	   $this->state = $state;
-	   
-	   return $len;
-   } // end of curlRequestCallback()
+		} // end of foreach()
+		
+		// when we call this callback again (if we do) this is the state our machine will be in:
+		$this->state = $state;
+		
+		return $len;
+	} // end of curlRequestCallback()
 
 
 } // end of class Callbacks
